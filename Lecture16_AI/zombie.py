@@ -115,20 +115,20 @@ class Zombie:
 
     def is_more_ball(self):
         if self.ball_count > play_mode.boy.ball_count:
-            return True
-        else:
-            return False
-        pass
-
-    def is_boy_nearby_more_ball(self, distance):
-        if self.distance_less_than(play_mode.boy.x, play_mode.boy.y, self.x, self.y, distance) and self.is_more_ball():
             return BehaviorTree.SUCCESS
         else:
             return BehaviorTree.FAIL
         pass
 
-    def is_boy_nearby_less_ball(self, distance):
-        if self.distance_less_than(play_mode.boy.x, play_mode.boy.y, self.x, self.y, distance) and not self.is_more_ball():
+    def is_less_ball(self):
+        if self.ball_count <= play_mode.boy.ball_count:
+            return BehaviorTree.SUCCESS
+        else:
+            return BehaviorTree.FAIL
+        pass
+
+    def is_boy_nearby(self, distance):
+        if self.distance_less_than(play_mode.boy.x, play_mode.boy.y, self.x, self.y, distance):
             return BehaviorTree.SUCCESS
         else:
             return BehaviorTree.FAIL
@@ -169,14 +169,15 @@ class Zombie:
         a2 = Action('Set random location', self.set_random_location)
         root = SEQ_wander = Sequence('Wander', a2, a1)
 
-        c1 = Condition('소년이 근처에 있고 공 갯수가 많은가?', self.is_boy_nearby_more_ball, 7)
-        c2 = Condition('소년이 근처에 있고 공 갯수가 적은가?', self.is_boy_nearby_less_ball, 7)
+        c1 = Condition('소년이 근처에 있는가?', self.is_boy_nearby, 7)
+        c2 = Condition('소년보다 공 갯수가 많은가?', self.is_more_ball)
+        c3 = Condition('소년보다 공 갯수가 적은가?', self.is_less_ball)
 
         a3 = Action('소년한테 접근', self.move_to_boy)
         a4 = Action('소년한테 도망', self.run_away_to_boy)
 
-        root = SEQ_chase_boy = Sequence('소년을 추적', c1, a3)
-        root = SEQ_run_away = Sequence('소년에게 도망', c2, a4)
+        root = SEQ_chase_boy = Sequence('소년을 추적', c1, c2, a3)
+        root = SEQ_run_away = Sequence('소년에게 도망', c1, c3, a4)
 
         root = SEL_chase_or_flee = Selector('추적 또는 도망 또는 배회', SEQ_chase_boy, SEQ_run_away, SEQ_wander)
 
